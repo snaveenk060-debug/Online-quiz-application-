@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Online Quiz Application</title>
+<style>
+  :root{
+    --ink:#1c2333;
+    --paper:#faf7f0;
+    --paper-2:#f1ecdf;
+    --rule:#d8d0bb;
+    --accent:#3a5a40;
+    --accent-2:#b5651d;
+    --wrong:#a23b3b;
+    --white:#ffffff;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#eee8d8;
+      --paper:#141814;
+      --paper-2:#1c211c;
+      --rule:#3a4038;
+      --accent:#8fbf9f;
+      --accent-2:#e0a15c;
+      --wrong:#e08787;
+      --white:#1e231e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#eee8d8;
+    --paper:#141814;
+    --paper-2:#1c211c;
+    --rule:#3a4038;
+    --accent:#8fbf9f;
+    --accent-2:#e0a15c;
+    --wrong:#e08787;
+    --white:#1e231e;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+  body{
+    margin:0;
+    min-height:100%;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Iowan Old Style','Palatino Linotype',Georgia,serif;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 48px;
+  }
+  .wrap{
+    width:100%;
+    max-width:640px;
+  }
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:10px;
+    margin-bottom:28px;
+  }
+  header.top h1{
+    font-size:1.5rem;
+    margin:0;
+    font-weight:700;
+    letter-spacing:0.2px;
+  }
+  header.top span.tag{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:0.72rem;
+    color:var(--accent);
+    border:1px solid var(--accent);
+    border-radius:3px;
+    padding:3px 7px;
+  }
+
+  /* Progress */
+  .progress-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:0.85rem;
+    color:var(--ink);
+    opacity:0.75;
+    margin-bottom:6px;
+  }
+  .progress-track{
+    flex:1;
+    height:4px;
+    background:var(--rule);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--accent);
+    width:0%;
+    transition:width 0.35s ease;
+  }
+  .timer{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-variant-numeric:tabular-nums;
+    font-weight:600;
+    min-width:46px;
+    text-align:right;
+  }
+  .timer.low{color:var(--wrong);}
+
+  /* Card */
+  .card{
+    background:var(--white);
+    border:1px solid var(--rule);
+    border-radius:6px;
+    padding:28px 24px;
+    margin-top:18px;
+  }
+  .qnum{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:0.78rem;
+    color:var(--accent-2);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  .qtext{
+    font-size:1.28rem;
+    line-height:1.45;
+    margin:0 0 22px;
+  }
+  .options{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .opt{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    border:1px solid var(--rule);
+    border-radius:5px;
+    padding:12px 14px;
+    cursor:pointer;
+    background:transparent;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:0.98rem;
+    color:var(--ink);
+    text-align:left;
+    transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  .opt:hover{border-color:var(--accent);}
+  .opt .bullet{
+    width:20px;height:20px;flex:0 0 20px;
+    border-radius:50%;
+    border:1.5px solid var(--rule);
+    display:flex;align-items:center;justify-content:center;
+    font-size:0.7rem;
+    color:transparent;
+  }
+  .opt.selected{
+    border-color:var(--accent);
+    background:color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .opt.selected .bullet{
+    border-color:var(--accent);
+    background:var(--accent);
+    color:var(--white);
+  }
+  .opt.correct{
+    border-color:var(--accent);
+    background:color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  .opt.correct .bullet{background:var(--accent);border-color:var(--accent);color:var(--white);}
+  .opt.incorrect{
+    border-color:var(--wrong);
+    background:color-mix(in srgb, var(--wrong) 12%, transparent);
+  }
+  .opt.incorrect .bullet{background:var(--wrong);border-color:var(--wrong);color:var(--white);}
+  .opt:disabled{cursor:default;}
+
+  .nav-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:22px;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  button.nav{
+    border:1px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    padding:10px 18px;
+    border-radius:5px;
+    font-size:0.9rem;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  button.nav:disabled{opacity:0.35;cursor:default;}
+  button.nav.primary{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:var(--white);
+    font-weight:600;
+  }
+
+  /* Result screen */
+  .result{
+    text-align:center;
+    padding:40px 20px 10px;
+  }
+  .result .score-big{
+    font-size:3.4rem;
+    font-weight:700;
+    margin:6px 0 0;
+    color:var(--accent);
+  }
+  .result .score-sub{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink);
+    opacity:0.7;
+    margin-bottom:26px;
+    font-size:0.95rem;
+  }
+  .breakdown{
+    text-align:left;
+    border-top:1px solid var(--rule);
+    margin-top:20px;
+    padding-top:16px;
+  }
+  .brow{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    padding:9px 0;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:0.88rem;
+    border-bottom:1px dashed var(--rule);
+  }
+  .brow:last-child{border-bottom:none;}
+  .brow .mark{
+    flex:0 0 18px;
+    font-weight:700;
+  }
+  .brow .mark.ok{color:var(--accent);}
+  .brow .mark.no{color:var(--wrong);}
+  .retry{
+    margin-top:26px;
+    width:100%;
+    padding:13px;
+    border-radius:5px;
+    border:none;
+    background:var(--accent);
+    color:var(--white);
+    font-weight:600;
+    font-size:1rem;
+    cursor:pointer;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+
+  .start{
+    text-align:center;
+    padding:50px 10px 20px;
+  }
+  .start p{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    opacity:0.75;
+    font-size:0.95rem;
+    line-height:1.6;
+  }
+  .start button{
+    margin-top:22px;
+    padding:13px 30px;
+    border-radius:5px;
+    border:none;
+    background:var(--accent);
+    color:var(--white);
+    font-weight:600;
+    font-size:1rem;
+    cursor:pointer;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+
+  .retry.exit{
+    background:transparent;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    margin-top:12px;
+  }
+
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>General Knowledge Quiz</h1>
+    <span class="tag">10 questions</span>
+  </header>
+
+  <!-- START SCREEN -->
+  <div id="startScreen" class="card start">
+    <div class="qnum">WELCOME</div>
+    <p>Ten multiple-choice questions. You'll have 20 seconds per question &mdash; answer before time runs out.</p>
+    <button id="beginBtn">Start Quiz</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="quizScreen" class="hidden">
+    <div class="progress-row">
+      <span id="progressLabel">Question 1 of 10</span>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <span class="timer" id="timer">20s</span>
+    </div>
+
+    <div class="card">
+      <div class="qnum" id="qnum">QUESTION 1</div>
+      <p class="qtext" id="qtext"></p>
+      <div class="options" id="options"></div>
+    </div>
+
+    <div class="nav-row">
+      <button class="nav" id="prevBtn">Previous</button>
+      <button class="nav primary" id="nextBtn">Next</button>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="resultScreen" class="hidden card result">
+    <div class="qnum">RESULT</div>
+    <div class="score-big" id="scoreBig">0/10</div>
+    <div class="score-sub" id="scoreSub">You scored 0%</div>
+    <div class="breakdown" id="breakdown"></div>
+    <button class="retry" id="retryBtn">Retake Quiz</button>
+    <button class="retry exit" id="exitBtn">Exit to Home</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {q:"Which planet is known as the Red Planet?", opts:["Venus","Mars","Jupiter","Saturn"], correct:1},
+  {q:"Who wrote the play 'Romeo and Juliet'?", opts:["Charles Dickens","Leo Tolstoy","William Shakespeare","Mark Twain"], correct:2},
+  {q:"What is the chemical symbol for gold?", opts:["Ag","Au","Gd","Go"], correct:1},
+  {q:"Which is the largest ocean on Earth?", opts:["Atlantic","Indian","Arctic","Pacific"], correct:3},
+  {q:"In which year did India gain independence?", opts:["1945","1947","1950","1952"], correct:1},
+  {q:"What is the capital of Japan?", opts:["Seoul","Beijing","Tokyo","Bangkok"], correct:2},
+  {q:"Which gas do plants absorb from the atmosphere?", opts:["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"], correct:2},
+  {q:"How many continents are there on Earth?", opts:["5","6","7","8"], correct:2},
+  {q:"Who painted the Mona Lisa?", opts:["Vincent van Gogh","Pablo Picasso","Leonardo da Vinci","Claude Monet"], correct:2},
+  {q:"What is the square root of 144?", opts:["10","11","12","14"], correct:2}
+];
+
+const TIME_PER_Q = 20;
+
+let current = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+let timerId = null;
+let timeLeft = TIME_PER_Q;
+
+const startScreen = document.getElementById('startScreen');
+const quizScreen = document.getElementById('quizScreen');
+const resultScreen = document.getElementById('resultScreen');
+const qnumEl = document.getElementById('qnum');
+const qtextEl = document.getElementById('qtext');
+const optionsEl = document.getElementById('options');
+const progressLabel = document.getElementById('progressLabel');
+const progressFill = document.getElementById('progressFill');
+const timerEl = document.getElementById('timer');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+
+document.getElementById('beginBtn').addEventListener('click', startQuiz);
+document.getElementById('retryBtn').addEventListener('click', () => {
+  answers = new Array(QUESTIONS.length).fill(null);
+  current = 0;
+  startQuiz();
+});
+document.getElementById('exitBtn').addEventListener('click', () => {
+  clearInterval(timerId);
+  answers = new Array(QUESTIONS.length).fill(null);
+  current = 0;
+  resultScreen.classList.add('hidden');
+  quizScreen.classList.add('hidden');
+  startScreen.classList.remove('hidden');
+});
+prevBtn.addEventListener('click', () => goTo(current - 1));
+nextBtn.addEventListener('click', () => {
+  if (current === QUESTIONS.length - 1) {
+    finishQuiz();
+  } else {
+    goTo(current + 1);
+  }
+});
+
+function startQuiz(){
+  startScreen.classList.add('hidden');
+  resultScreen.classList.add('hidden');
+  quizScreen.classList.remove('hidden');
+  renderQuestion();
+}
+
+function goTo(idx){
+  if (idx < 0 || idx >= QUESTIONS.length) return;
+  current = idx;
+  renderQuestion();
+}
+
+function renderQuestion(){
+  clearInterval(timerId);
+  timeLeft = TIME_PER_Q;
+  updateTimerDisplay();
+
+  const item = QUESTIONS[current];
+  qnumEl.textContent = 'QUESTION ' + (current + 1);
+  qtextEl.textContent = item.q;
+  progressLabel.textContent = 'Question ' + (current + 1) + ' of ' + QUESTIONS.length;
+  progressFill.style.width = ((current) / QUESTIONS.length * 100) + '%';
+
+  optionsEl.innerHTML = '';
+  item.opts.forEach((optText, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = '<span class="bullet">'+String.fromCharCode(65+i)+'</span><span>'+optText+'</span>';
+    if (answers[current] === i) btn.classList.add('selected');
+    btn.addEventListener('click', () => selectAnswer(i));
+    optionsEl.appendChild(btn);
+  });
+
+  prevBtn.disabled = current === 0;
+  nextBtn.textContent = current === QUESTIONS.length - 1 ? 'Finish' : 'Next';
+
+  timerId = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0){
+      clearInterval(timerId);
+      if (current === QUESTIONS.length - 1) {
+        finishQuiz();
+      } else {
+        goTo(current + 1);
+      }
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay(){
+  timerEl.textContent = timeLeft + 's';
+  timerEl.classList.toggle('low', timeLeft <= 5);
+}
+
+function selectAnswer(i){
+  answers[current] = i;
+  [...optionsEl.children].forEach((btn, idx) => {
+    btn.classList.toggle('selected', idx === i);
+  });
+}
+
+function finishQuiz(){
+  clearInterval(timerId);
+  quizScreen.classList.add('hidden');
+  resultScreen.classList.remove('hidden');
+
+  let score = 0;
+  const breakdown = document.getElementById('breakdown');
+  breakdown.innerHTML = '';
+
+  QUESTIONS.forEach((item, i) => {
+    const isCorrect = answers[i] === item.correct;
+    if (isCorrect) score++;
+    const row = document.createElement('div');
+    row.className = 'brow';
+    const given = answers[i] === null ? 'No answer' : item.opts[answers[i]];
+    row.innerHTML =
+      '<span class="mark ' + (isCorrect ? 'ok' : 'no') + '">' + (isCorrect ? '✓' : '✕') + '</span>' +
+      '<span>' + (i+1) + '. ' + item.q + '<br><em>Your answer: ' + given + (isCorrect ? '' : ' &mdash; Correct: ' + item.opts[item.correct]) + '</em></span>';
+    breakdown.appendChild(row);
+  });
+
+  document.getElementById('scoreBig').textContent = score + '/' + QUESTIONS.length;
+  document.getElementById('scoreSub').textContent = 'You scored ' + Math.round(score / QUESTIONS.length * 100) + '%';
+}
+</script>
+</body>
+</html>
